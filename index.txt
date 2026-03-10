@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Futurescape - Digital Usage by Generation</title>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <style>
+        @font-face {
+            font-family: 'Modern Era';
+            src: url('https://www.genspark.ai/api/files/s/uyROMvPh?token=Z0FBQUFBQnBlT1U5eWY3R1ktZDBiUTBkNnYzVnNWd3JnSW5sYU1INzFWZ09hTzNfb0MzZHh0ZHNTcEFmZ0ItVFNXS0djUDRNeGNXRkJrakdib3dHeHU5TUFhMjJPWFQ3cllrX0FvY2RQV3BVeGRvTEtRS2ZMdllGVTVmck5PLUYtSFBOWlQyUklHVm52ak15NXRsTE44U1FZazlaSlg0dzR4VjY5N2lXdUJmMGF4SEotSHB6WWl4a25rUkRGalF6N2l0TFFZS2hMZGxHSzBWXzBRUjNxR1JaU051blpkZlZpYkNibTl6ZTdJeC0zLVNEeW1qSDFxd3RIcDh1ZldNRnpBRW9zdlA5N2F6cDYxOG1oV04wSmcwbHAydzZ0emlyOFE9PQ') format('opentype');
+            font-weight: 400;
+        }
+        @font-face {
+            font-family: 'Modern Era';
+            src: url('https://www.genspark.ai/api/files/s/hxngSY2H?token=Z0FBQUFBQnBlT1U5aUxRejVLQ21FRHU4ZHhvSnZBWHN1Z1VyeGtDTVc0M1dpcE9nVm1aRUVTU2RSak05bjUzcjJQbDVaQTZZelJOeUdTeUo3YnJwTkwwaFZkUzhiWkl1NUxzSFFSNkc3SmllX0daNTBPQURjZzY3bGoyUlhNTHE0UjA0QTdrT1Z2SGNVeXdFN3ZVSWRWTVpPRS1PTVdjak9XU2NlVUFUY2hQRUZXc1lSSDM0d2lIN19jZ25ubXMyZVh6QThlT2JqbzhkMXlPQVJOYTd4QUQtRWpCcXIxbTdfOG9FR28tTWR5UVRld1NwOEJmRmxUVlJELTRHMW1DWmJJV1BpZHdSLTdwcVFiR0F6UFV3bWpUdkJvRUp2UE5VR0E5PQ') format('opentype');
+            font-weight: 700;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Modern Era', sans-serif;
+            font-weight: 400;
+            background: #ffffff;
+            color: #041561;
+        }
+
+        .container { max-width: 1400px; margin: 0 auto; padding: 40px; }
+
+        /* HEADER */
+        .header { margin-bottom: 40px; }
+        .futurescape-label {
+            font-weight: 400;
+            font-size: 13px;
+            color: #0178f0;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+        .header h1 {
+            font-weight: 700;
+            font-size: 44px;
+            line-height: 1.15;
+            color: #041561;
+            margin-bottom: 16px;
+        }
+        .header p {
+            font-weight: 400;
+            font-size: 17px;
+            line-height: 1.7;
+            color: #555;
+            max-width: 780px;
+        }
+
+        /* CHART + CONTROLS — merged block */
+        .chart-wrapper {
+            background: #041561;
+            border-radius: 16px 16px 0 0;
+            padding: 32px 32px 20px;
+            transition: opacity 0.35s ease;
+        }
+        .chart-wrapper.transitioning { opacity: 0.7; }
+        #chart { width: 100%; height: 560px; }
+
+        /* CONTROLS PANEL */
+        .controls-panel {
+            background: #041561;
+            border-radius: 0 0 16px 16px;
+            padding: 20px 32px 28px;
+            margin-bottom: 32px;
+        }
+        .controls-panel-title {
+            font-weight: 700;
+            font-size: 20px;
+            color: #fff;
+            margin-bottom: 16px;
+        }
+
+        /* separator line between chart and controls */
+        .chart-controls-divider { display: none; }
+
+        /* ── CONTROLS ROW (tiles left, slider right) ── */
+        .controls-row {
+            display: flex;
+            gap: 32px;
+            align-items: center;
+        }
+        .dataset-section { flex-shrink: 0; }
+        .generation-section { flex: 1; min-width: 0; }
+
+        /* ── DATASET TILES ── */
+        .dataset-tiles {
+            display: flex;
+            gap: 10px;
+        }
+        .d-tile {
+            background: #0178f0;
+            border-radius: 14px;
+            padding: 14px 16px;
+            width: 120px;
+            height: 120px;
+            display: flex;
+            align-items: flex-end;
+            justify-content: flex-start;
+            cursor: pointer;
+            border: 3px solid transparent;
+            position: relative;
+            overflow: hidden;
+            transition: border-color 0.2s ease, background 0.2s ease;
+        }
+        .d-tile.active {
+            border-color: rgba(255,255,255,0.7);
+            background: #0165cc;
+        }
+        .d-tile h3 {
+            font-weight: 700;
+            font-size: 13px;
+            color: #fff;
+            line-height: 1.35;
+            z-index: 1;
+            text-align: left;
+        }
+
+        /* ── GENERATION SLIDER ── */
+        /*
+         * Precision alignment approach:
+         * The browser maps a range input with min=0 max=3 so that
+         * the thumb centre sits at these fractional positions along the track:
+         *   step 0 → 0%,  step 1 → 33.33%,  step 2 → 66.67%,  step 3 → 100%
+         * The thumb has a radius of 13px. So the thumb CENTRE runs from
+         * 13px to (trackWidth - 13px) — NOT from 0 to trackWidth.
+         * We compensate by padding the label row by exactly 13px each side,
+         * then give each label flex:1 and text-align:center.
+         * This means label[0] centre = 0 + 13px + (1/8 × innerWidth)
+         * which exactly matches the thumb at step 0, and so on.
+         */
+        .gen-slider-track {
+            position: relative;
+            /* room for labels below */
+            padding-bottom: 44px;
+        }
+        /* inset matches half-thumb (13px) so thumb aligns over label centres */
+        .gen-slider-inner {
+            padding: 0 13px;
+        }
+        input[type="range"].gen-slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 5px;
+            border-radius: 3px;
+            background: rgba(255,255,255,0.2);
+            outline: none;
+            cursor: pointer;
+            display: block;
+            margin: 0;
+        }
+        input[type="range"].gen-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: #b26bff;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(178,107,255,0.55);
+            transition: transform 0.2s ease;
+        }
+        input[type="range"].gen-slider::-webkit-slider-thumb:active { transform: scale(1.15); }
+        input[type="range"].gen-slider::-moz-range-thumb {
+            width: 26px; height: 26px;
+            border-radius: 50%;
+            background: #b26bff;
+            border: none;
+            cursor: pointer;
+        }
+        /*
+         * Label row: position absolute, full width of .gen-slider-track.
+         * Each label gets flex:1 + text-align:center so the centre of
+         * label[i] sits at  13px + (i + 0.5) / 4 × (trackWidth - 26px)
+         * which is exactly where the thumb sits at step i.
+         */
+        .gen-labels {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            align-items: flex-start;
+        }
+        .gen-label {
+            flex: 1;
+            text-align: center;
+            font-weight: 400;
+            font-size: 13px;
+            color: rgba(255,255,255,0.55);
+            cursor: pointer;
+            line-height: 1.3;
+            transition: color 0.2s ease;
+            padding-top: 10px;
+        }
+        .gen-label.active {
+            font-weight: 700;
+            color: #fff;
+        }
+        .gen-label .label-text { display: inline-block; position: relative; }
+        .gen-label.active .label-text::after {
+            content: '';
+            display: block;
+            width: 100%;
+            height: 2px;
+            background: #b26bff;
+            border-radius: 2px;
+            margin-top: 4px;
+        }
+
+        /* ── GENERATION PROFILE CARD ── */
+        .gen-profile {
+            background: #f3efea;
+            border-radius: 14px;
+            overflow: hidden;
+            max-height: 0;
+            opacity: 0;
+            transition: max-height 0.55s cubic-bezier(0.4,0,0.2,1), opacity 0.35s ease;
+            margin-bottom: 32px;
+        }
+        .gen-profile.active {
+            max-height: 1400px;
+            opacity: 1;
+        }
+        .gen-profile-inner { padding: 36px; }
+
+        /* Profile top row: name + shift slider */
+        .gen-profile-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 24px;
+            margin-bottom: 28px;
+            flex-wrap: wrap;
+        }
+        .gen-name-block h3 {
+            font-weight: 700;
+            font-size: 28px;
+            color: #041561;
+            margin-bottom: 4px;
+        }
+        .gen-name-block .snappy {
+            font-weight: 400;
+            font-size: 16px;
+            color: #0178f0;
+        }
+
+        /* Journey bar */
+        .journey-bar {
+            background: #e2dbd6;
+            border-radius: 8px;
+            padding: 14px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 28px;
+            font-size: 14px;
+            color: #041561;
+            flex-wrap: wrap;
+            text-align: center;
+        }
+        .journey-bar .now-tag    { font-weight: 700; color: #0178f0; white-space: nowrap; }
+        .journey-bar .arrow      { color: #0178f0; font-size: 18px; flex-shrink: 0; }
+        .journey-bar .future-tag { font-weight: 700; color: #b26bff; white-space: nowrap; }
+        .journey-bar .descriptors {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .journey-bar .descriptor {
+            color: #555;
+            font-size: 13px;
+        }
+        .journey-bar .desc-sep {
+            color: #bbb;
+            font-size: 12px;
+        }
+
+        /* Two-column text grid */
+        .profile-text-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 32px;
+            margin-bottom: 28px;
+        }
+        .profile-text-col { }
+        .profile-text-col h4 {
+            font-weight: 700;
+            font-size: 13px;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+        /* NOW column */
+        .profile-text-col.col-now h4  { color: #0178f0; }
+        .profile-text-col.col-now p   { font-weight: 400; font-size: 15px; color: #333; line-height: 1.75; }
+
+        /* 2030 column – purple differentiation */
+        .profile-text-col.col-future h4  { color: #b26bff; }
+        .profile-text-col.col-future p   {
+            font-weight: 400;
+            font-size: 15px;
+            color: #7a3fbf;   /* purple body text */
+            line-height: 1.75;
+            font-style: italic;
+        }
+
+        /* Stats row */
+        .stats-section-heading {
+            font-weight: 700;
+            font-size: 13px;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            color: #041561;
+            margin-bottom: 14px;
+        }
+        .section-divider { border: none; border-top: 1.5px solid #e2dbd6; margin: 0 0 24px; }
+        .stats-grid { display: flex; gap: 10px; flex-wrap: wrap; }
+        .stat-pill {
+            background: #fff;
+            border: 1.5px solid #e2dbd6;
+            border-radius: 50px;
+            padding: 10px 20px;
+            font-size: 14px;
+            color: #041561;
+        }
+
+        .controls-top-row {
+            display: flex;
+            gap: 32px;
+            align-items: baseline;
+            margin-bottom: 16px;
+        }
+        .controls-top-row .controls-panel-title {
+            margin-bottom: 0;
+        }
+        /* first title sits over tiles, second over slider */
+        .controls-top-row .controls-panel-title:first-child {
+            flex-shrink: 0;
+            /* match total width of 3 tiles + 2 gaps: 3×120 + 2×10 = 380px */
+            width: 380px;
+        }
+        .controls-top-row .controls-panel-title:last-child {
+            flex: 1;
+        }
+        @keyframes slideIn {
+            from { transform: translateY(10px); opacity: 0; }
+            to   { transform: translateY(0);    opacity: 1; }
+        }
+        .d-tile { animation: slideIn 0.4s cubic-bezier(0.4,0,0.2,1) backwards; }
+        .d-tile:nth-child(1) { animation-delay: 0s; }
+        .d-tile:nth-child(2) { animation-delay: 0.07s; }
+        .d-tile:nth-child(3) { animation-delay: 0.14s; }
+
+        /* RESPONSIVE */
+        @media (max-width: 1100px) {
+            .profile-text-grid { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 800px) {
+            .controls-row { flex-direction: column; align-items: flex-start; }
+            .generation-section { width: 100%; }
+        }
+        @media (max-width: 700px) {
+            .container { padding: 20px; }
+            .header h1 { font-size: 30px; }
+            .dataset-tiles { flex-wrap: wrap; }
+            .d-tile { width: 100px; height: 100px; }
+            .gen-profile-header { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <!-- HEADER -->
+    <div class="header">
+        <div class="futurescape-label">Futurescape</div>
+        <h1>Digital Usage by Generation</h1>
+        <p>Explore how different generations engage with digital media and online activities. Use the interactive controls below the chart to compare usage patterns across age groups.</p>
+    </div>
+
+    <!-- CHART (flush into controls) -->
+    <div class="chart-wrapper" id="chartWrapper">
+        <div id="chart"></div>
+    </div>
+
+    <!-- thin divider so colours read as one block -->
+    <div class="chart-controls-divider"></div>
+
+    <!-- CONTROLS PANEL -->
+    <div class="controls-panel">
+        <div class="controls-top-row">
+            <div class="controls-panel-title">Select Dataset</div>
+            <div class="controls-panel-title">Select Generation</div>
+        </div>
+        <div class="controls-row">
+
+            <!-- Dataset tiles -->
+            <div class="dataset-section">
+                <div class="dataset-tiles">
+                    <div class="d-tile active" data-dataset="online_activities">
+                        <h3>Online Activities<br>(% Engagement)</h3>
+                    </div>
+                    <div class="d-tile" data-dataset="time_spent">
+                        <h3>Time Spent Online<br>(Hrs / Week)</h3>
+                    </div>
+                    <div class="d-tile" data-dataset="social_media">
+                        <h3>Social Media Usage<br>(Daily)</h3>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Generation slider -->
+            <div class="generation-section">
+                <div class="gen-slider-track">
+                    <div class="gen-slider-inner">
+                        <input type="range" class="gen-slider" id="genSlider" min="0" max="3" step="1" value="0">
+                    </div>
+                    <div class="gen-labels" id="genLabels">
+                        <div class="gen-label active" data-index="0"><span class="label-text">Gen Z</span></div>
+                        <div class="gen-label" data-index="1"><span class="label-text">Millennials</span></div>
+                        <div class="gen-label" data-index="2"><span class="label-text">Gen X</span></div>
+                        <div class="gen-label" data-index="3"><span class="label-text">Baby Boomers</span></div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- GENERATION PROFILE CARD -->
+    <div class="gen-profile active" id="genProfile">
+        <div class="gen-profile-inner">
+
+            <!-- Header row -->
+            <div class="gen-profile-header">
+                <div class="gen-name-block">
+                    <h3 id="profileName">Gen Z</h3>
+                    <div class="snappy" id="profileSnappy">The Always-On Achievers</div>
+                </div>
+            </div>
+
+            <!-- Journey line -->
+            <div class="journey-bar">
+                <span class="now-tag">Now</span>
+                <span class="arrow">→</span>
+                <span class="descriptors" id="journeyDescriptors">
+                    <span class="descriptor">Identity building</span>
+                    <span class="desc-sep">·</span>
+                    <span class="descriptor">Platform native</span>
+                    <span class="desc-sep">·</span>
+                    <span class="descriptor">Value &amp; authenticity</span>
+                </span>
+                <span class="arrow">→</span>
+                <span class="future-tag">2030</span>
+            </div>
+
+            <!-- Now / 2030 text columns -->
+            <div class="profile-text-grid">
+                <div class="profile-text-col col-now">
+                    <h4 id="nowHeading">Now</h4>
+                    <p id="profileNow">Ambitious, expressive, digitally native. Career-focused, creative and open-minded. Immersed in gaming, sport, tech and social platforms. Expect personalised, socially responsible, digitally fluent brands.</p>
+                </div>
+                <div class="profile-text-col col-future">
+                    <h4 id="futureHeading">By 2030</h4>
+                    <p id="profileFuture">Career-building, financially independent, progressing professionally. Social fluency becomes networking power. Success shifts from aspiration to measurable achievement. Expect value alignment from employers and brands.</p>
+                </div>
+            </div>
+
+            <hr class="section-divider">
+            <div class="stats-section-heading">Key Stats</div>
+            <div class="stats-grid" id="statsGrid"><!-- filled by JS --></div>
+
+        </div>
+    </div>
+
+</div><!-- end container -->
+
+<script>
+// ─────────────────────────────────────────────────────────
+// CHART DATA
+// ─────────────────────────────────────────────────────────
+const GENERATIONS = ['Gen Z', 'Millennials', 'Gen X', 'Baby Boomers'];
+
+const chartData = {
+    online_activities: {
+        title: 'Online Activities — % Who Engaged at Least Once',
+        subtitle: 'Percentage that engaged in each online activity at least once in the past week',
+        activities: ['Games Consoles','Linear/Broadcast TV','Music Streaming','Online Press','Online TV / Streaming','Physical Press','Podcasts','Radio','Social Media'],
+        generations: {
+            'Gen Z':        [62.9, 62.1, 89.5, 71.0, 87.5, 36.2, 53.9, 51.9, 91.4],
+            'Millennials':  [51.1, 67.9, 79.6, 77.6, 87.0, 38.7, 53.1, 65.8, 90.2],
+            'Gen X':        [26.6, 75.5, 57.9, 76.5, 73.7, 33.7, 37.1, 69.7, 82.5],
+            'Baby Boomers': [12.6, 82.4, 29.7, 70.3, 46.3, 44.9, 17.7, 67.3, 66.9]
+        },
+        suffix: '%'
+    },
+    time_spent: {
+        title: 'Time Spent per Session',
+        subtitle: 'Average duration of latest occasion (hrs) by activity',
+        activities: ['Social Media','Podcasts','Radio','Mobile Games','PC / Console Games','Online Press','Physical Press','Music Streaming','Broadcast TV','Short Videos','Streaming Services','Videos (How-tos / Vlogs)'],
+        generations: {
+            'Gen Z':        [1.78, 0.68, 0.58, 1.05, 1.17, 0.58, 0.35, 1.78, 0.80, 1.65, 1.87, 1.30],
+            'Millennials':  [1.58, 0.75, 0.93, 0.98, 0.92, 0.70, 0.40, 1.37, 1.12, 1.15, 1.90, 1.07],
+            'Gen X':        [1.12, 0.48, 1.17, 0.65, 0.40, 0.63, 0.28, 0.92, 1.58, 0.62, 1.60, 0.57],
+            'Baby Boomers': [0.72, 0.20, 1.12, 0.37, 0.15, 0.52, 0.40, 0.38, 2.17, 0.27, 0.97, 0.25]
+        },
+        suffix: ' hrs'
+    },
+    social_media: {
+        title: 'Social Media Platform Usage',
+        subtitle: 'Percentage using each platform more than once per day',
+        activities: ['Facebook','Facebook Messenger','Instagram','Pinterest','Reddit','Snapchat','TikTok','WhatsApp','X (Twitter)','YouTube'],
+        generations: {
+            'Gen Z':        [23.6, 14.0, 48.5, 6.6, 7.3, 36.2, 45.9, 42.3, 16.7, 27.3],
+            'Millennials':  [44.3, 21.9, 38.9, 3.2, 6.8, 10.9, 25.4, 59.2, 16.3, 19.2],
+            'Gen X':        [45.0, 14.9, 21.8, 2.1, 2.7,  3.2, 11.7, 55.4, 11.4, 11.2],
+            'Baby Boomers': [40.1,  9.9,  8.4, 1.7, 0.4,  0.6,  2.7, 45.1,  5.8,  3.5]
+        },
+        suffix: '%'
+    }
+};
+
+// ─────────────────────────────────────────────────────────
+// GENERATION PROFILES
+// ─────────────────────────────────────────────────────────
+const genProfiles = {
+    'Gen Z': {
+        name: 'Gen Z',
+        snappy: 'The Always-On Achievers',
+        descriptors: ['Identity building', 'Platform native', 'Value & authenticity', 'Career establishment', 'Financial independence'],
+        now: 'Ambitious, expressive, digitally native. Career-focused, creative and open-minded. Immersed in gaming, sport, tech and social platforms. Expect personalised, socially responsible, digitally fluent brands.',
+        future: 'Career-building, financially independent, progressing professionally. Social fluency becomes networking power. Success shifts from aspiration to measurable achievement. Expect value alignment from employers and brands.',
+        stats: ['49% describe themselves as ambitious','52% describe themselves as creative','35% price conscious','63% say learning new skills is important','67% say being successful is important','33% describe themselves as gamers','53% would pay more for eco-friendly products']
+    },
+    'Millennials': {
+        name: 'Millennials',
+        snappy: 'The Balancing Builders',
+        descriptors: ['Balancing act', 'Convenience-led', 'Family responsibility', 'Consolidation', 'Stability over growth'],
+        now: 'Career-driven but pragmatic. Balancing ambition with family responsibility. Tech-confident, convenience-led, blending digital and traditional media.',
+        future: 'Careers mature, responsibilities deepen. Stability outweighs acceleration. Digital becomes utility-first. Success defined by security and sustained balance.',
+        stats: ['39% describe themselves as ambitious','49% describe themselves as creative','41% price conscious','31% are parent-focused workers','25% describe themselves as gamers','33% interested in gadgets','53% would pay more for eco-friendly products']
+    },
+    'Gen X': {
+        name: 'Gen X',
+        snappy: 'The Security Seekers',
+        descriptors: ['Pragmatic utility', 'Research-driven', 'Family-first', 'Future-proofing', 'Trust over trend'],
+        now: 'Family and financially focused. Tech-confident but cautious. Balance digital and traditional media. Expect transparency and responsible brand behaviour.',
+        future: 'Long-term planning becomes immediate priority. Family protection intensifies. Trusted media and clarity dominate. Transparency becomes non-negotiable.',
+        stats: ['20% describe themselves as ambitious','39% describe themselves as creative','54% price conscious','18% are thrifty parents','62% interested in films','76% say spending time with family is important']
+    },
+    'Baby Boomers': {
+        name: 'Baby Boomers',
+        snappy: 'The Proud Traditionalists',
+        descriptors: ['Selective adoption', 'Trust & loyalty', 'Health-conscious', 'Preserving legacy', 'Purposeful digital'],
+        now: 'Confident, health-conscious, tradition-led. Value financial security and family time. Prefer trusted media with selective digital engagement.',
+        future: 'Wellbeing and legacy move centre stage. Digital remains purposeful. Brand relationships prioritise reliability, clarity and respect.',
+        stats: ['7% describe themselves as ambitious','30% describe themselves as creative','56% price conscious','80% say financial security is important','65% describe themselves as traditionalists','68% interested in news & current affairs']
+    },
+
+};
+
+// ─────────────────────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────────────────────
+let currentDataset  = 'online_activities';
+let currentGenIndex = 0; // 0–3
+
+// ─────────────────────────────────────────────────────────
+// CHART RENDER
+// ─────────────────────────────────────────────────────────
+function updateChart(animate) {
+    const gen = GENERATIONS[currentGenIndex];
+    const ds  = chartData[currentDataset];
+    const vals = ds.generations[gen];
+
+    const trace = {
+        x: vals,
+        y: ds.activities,
+        type: 'bar',
+        orientation: 'h',
+        marker: {
+            color: '#b26bff',
+            line: { color: 'rgba(255,255,255,0.06)', width: 1 }
+        },
+        text: vals.map(v => v.toFixed(1) + ds.suffix),
+        textposition: 'outside',
+        textfont: { family: 'Modern Era, sans-serif', size: 12, color: '#ffffff' },
+        hoverinfo: 'skip'
+    };
+
+    const layout = {
+        title: {
+            text: '<b>' + ds.title + '</b>'
+                + '<br><span style="font-size:13px;color:rgba(255,255,255,0.5);">'
+                + ds.subtitle + ' — ' + gen + '</span>',
+            font: { size: 21, color: '#ffffff', family: 'Modern Era, sans-serif' },
+            x: 0.01, xanchor: 'left'
+        },
+        xaxis: {
+            title: {
+                text: ds.suffix === '%' ? 'Percentage (%)' : 'Hours per Week',
+                font: { size: 13, color: 'rgba(255,255,255,0.5)', family: 'Modern Era, sans-serif' }
+            },
+            gridcolor: 'rgba(255,255,255,0.07)',
+            showgrid: true,
+            zeroline: false,
+            color: 'rgba(255,255,255,0.5)',
+            tickfont: { family: 'Modern Era, sans-serif', size: 11 }
+        },
+        yaxis: {
+            automargin: true,
+            color: '#ffffff',
+            tickfont: { family: 'Modern Era, sans-serif', size: 12 },
+            ticksuffix: '  '
+        },
+        plot_bgcolor:  '#041561',
+        paper_bgcolor: '#041561',
+        margin: { l: 220, r: 100, t: 105, b: 65 },
+        height: 600,
+        hovermode: false
+    };
+
+    const config = {
+        responsive: true,
+        displayModeBar: false,
+        staticPlot: true
+    };
+
+    if (animate && document.getElementById('chart').data) {
+        Plotly.animate('chart', { data: [trace], layout }, {
+            transition: { duration: 380, easing: 'cubic-in-out' },
+            frame: { duration: 380 }
+        });
+    } else {
+        Plotly.newPlot('chart', [trace], layout, config);
+    }
+}
+
+// ─────────────────────────────────────────────────────────
+// PROFILE CARD
+// ─────────────────────────────────────────────────────────
+function updateProfile(genName) {
+    const p = genProfiles[genName];
+
+    document.getElementById('profileName').textContent   = p.name;
+    document.getElementById('profileSnappy').textContent = p.snappy;
+    // Build descriptor chain: desc1 · desc2 · desc3 → desc4 · desc5
+    const mid = Math.floor(p.descriptors.length / 2);
+    const nowDescs  = p.descriptors.slice(0, mid + 1);
+    const futDescs  = p.descriptors.slice(mid + 1);
+    const sepHTML   = '<span class="desc-sep">&middot;</span>';
+    const arrowHTML = '<span class="arrow" style="color:#0178f0;font-size:18px">&rarr;</span>';
+    document.getElementById('journeyDescriptors').innerHTML =
+        nowDescs.map(d => `<span class="descriptor">${d}</span>`).join(sepHTML)
+        + arrowHTML
+        + futDescs.map(d => `<span class="descriptor">${d}</span>`).join(sepHTML);
+    document.getElementById('profileNow').textContent    = p.now;
+    document.getElementById('profileFuture').textContent = p.future;
+
+    // Stats
+    document.getElementById('statsGrid').innerHTML =
+        p.stats.map(s => `<div class="stat-pill">${s}</div>`).join('');
+}
+
+function showProfile(genName) {
+    const card = document.getElementById('genProfile');
+    card.classList.remove('active');
+    setTimeout(() => {
+        updateProfile(genName);
+        card.classList.add('active');
+    }, 270);
+}
+
+// ─────────────────────────────────────────────────────────
+// GENERATION SLIDER
+// ─────────────────────────────────────────────────────────
+const genSlider = document.getElementById('genSlider');
+const genLabelEls = document.querySelectorAll('.gen-label');
+
+function setActiveGenLabel(index) {
+    genLabelEls.forEach((el, i) => {
+        el.classList.toggle('active', i === index);
+    });
+}
+
+genSlider.addEventListener('input', function() {
+    const newIndex = parseInt(this.value);
+    if (newIndex === currentGenIndex) return;
+    currentGenIndex = newIndex;
+    setActiveGenLabel(newIndex);
+
+    // Slide transition on chart
+    const wrapper = document.getElementById('chartWrapper');
+    wrapper.classList.add('transitioning');
+    setTimeout(() => {
+        updateChart(false);
+        wrapper.classList.remove('transitioning');
+    }, 160);
+
+    showProfile(GENERATIONS[newIndex]);
+});
+
+// Clicking a label snaps slider to that generation
+genLabelEls.forEach(el => {
+    el.addEventListener('click', function() {
+        const idx = parseInt(this.dataset.index);
+        genSlider.value = idx;
+        genSlider.dispatchEvent(new Event('input'));
+    });
+});
+
+// ─────────────────────────────────────────────────────────
+// DATASET TILES
+// ─────────────────────────────────────────────────────────
+document.querySelectorAll('.d-tile').forEach(tile => {
+    tile.addEventListener('click', function() {
+        if (this.dataset.dataset === currentDataset) return;
+        document.querySelectorAll('.d-tile').forEach(t => t.classList.remove('active'));
+        this.classList.add('active');
+        document.getElementById('chartWrapper').classList.add('transitioning');
+        currentDataset = this.dataset.dataset;
+        setTimeout(() => {
+            updateChart(false);
+            document.getElementById('chartWrapper').classList.remove('transitioning');
+        }, 130);
+    });
+});
+
+// ─────────────────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────────────────
+updateChart(false);
+updateProfile(GENERATIONS[0]);
+</script>
+</body>
+</html>
