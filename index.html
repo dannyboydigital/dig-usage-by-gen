@@ -131,26 +131,12 @@
         }
 
         /* ── GENERATION SLIDER ── */
-        /*
-         * Precision alignment approach:
-         * The browser maps a range input with min=0 max=3 so that
-         * the thumb centre sits at these fractional positions along the track:
-         *   step 0 → 0%,  step 1 → 33.33%,  step 2 → 66.67%,  step 3 → 100%
-         * The thumb has a radius of 13px. So the thumb CENTRE runs from
-         * 13px to (trackWidth - 13px) — NOT from 0 to trackWidth.
-         * We compensate by padding the label row by exactly 13px each side,
-         * then give each label flex:1 and text-align:center.
-         * This means label[0] centre = 0 + 13px + (1/8 × innerWidth)
-         * which exactly matches the thumb at step 0, and so on.
-         */
         .gen-slider-track {
             position: relative;
-            /* room for labels below */
             padding-bottom: 44px;
         }
-        /* inset matches half-thumb (13px) so thumb aligns over label centres */
         .gen-slider-inner {
-            padding: 0 13px;
+            padding: 0; /* no inset — JS positions labels precisely */
         }
         input[type="range"].gen-slider {
             -webkit-appearance: none;
@@ -181,23 +167,19 @@
             border: none;
             cursor: pointer;
         }
-        /*
-         * Label row: position absolute, full width of .gen-slider-track.
-         * Each label gets flex:1 + text-align:center so the centre of
-         * label[i] sits at  13px + (i + 0.5) / 4 × (trackWidth - 26px)
-         * which is exactly where the thumb sits at step i.
-         */
+        /* Labels are positioned absolutely by JS so each one is
+           centred exactly over its thumb stop */
         .gen-labels {
             position: absolute;
             bottom: 0;
             left: 0;
             right: 0;
-            display: flex;
-            align-items: flex-start;
         }
         .gen-label {
-            flex: 1;
+            position: absolute;
+            transform: translateX(-50%);
             text-align: center;
+            white-space: nowrap;
             font-weight: 400;
             font-size: 13px;
             color: rgba(255,255,255,0.55);
@@ -206,8 +188,6 @@
             transition: color 0.2s ease;
             padding-top: 10px;
         }
-        .gen-label:first-child { text-align: left; }
-        .gen-label:last-child  { text-align: right; }
         .gen-label.active {
             font-weight: 700;
             color: #fff;
@@ -355,8 +335,8 @@
         /* first title sits over tiles, second over slider */
         .controls-top-row .controls-panel-title:first-child {
             flex-shrink: 0;
-            /* match total width of 3 tiles + 2 gaps: 3×120 + 2×10 = 380px */
-            width: 380px;
+            /* match total width of 2 tiles + 1 gap: 2×120 + 1×10 = 250px */
+            width: 250px;
         }
         .controls-top-row .controls-panel-title:last-child {
             flex: 1;
@@ -368,7 +348,6 @@
         .d-tile { animation: slideIn 0.4s cubic-bezier(0.4,0,0.2,1) backwards; }
         .d-tile:nth-child(1) { animation-delay: 0s; }
         .d-tile:nth-child(2) { animation-delay: 0.07s; }
-        .d-tile:nth-child(3) { animation-delay: 0.14s; }
 
         /* RESPONSIVE */
         @media (max-width: 1100px) {
@@ -408,22 +387,19 @@
     <!-- CONTROLS PANEL -->
     <div class="controls-panel">
         <div class="controls-top-row">
-            <div class="controls-panel-title">Select Dataset</div>
-            <div class="controls-panel-title">Select Generation</div>
+            <div class="controls-panel-title">Select dataset</div>
+            <div class="controls-panel-title">Select generation</div>
         </div>
         <div class="controls-row">
 
             <!-- Dataset tiles -->
             <div class="dataset-section">
                 <div class="dataset-tiles">
-                    <div class="d-tile active" data-dataset="online_activities">
-                        <h3>Online Activities<br>(% Engagement)</h3>
-                    </div>
-                    <div class="d-tile" data-dataset="time_spent">
-                        <h3>Time Spent Online<br>(Hrs / Week)</h3>
+                    <div class="d-tile active" data-dataset="time_spent">
+                        <h3>Time spent online<br>(daily mins)</h3>
                     </div>
                     <div class="d-tile" data-dataset="social_media">
-                        <h3>Social Media Usage<br>(Daily)</h3>
+                        <h3>Social media<br>(daily mins)</h3>
                     </div>
                 </div>
             </div>
@@ -454,7 +430,7 @@
             <div class="gen-profile-header">
                 <div class="gen-name-block">
                     <h3 id="profileName">Gen Z</h3>
-                    <div class="snappy" id="profileSnappy">The Always-On Achievers</div>
+                    <div class="snappy" id="profileSnappy">The always-on achievers</div>
                 </div>
             </div>
 
@@ -486,13 +462,14 @@
             </div>
 
             <hr class="section-divider">
-            <div class="stats-section-heading">Key Stats</div>
+            <div class="stats-section-heading">Key stats</div>
             <div class="stats-grid" id="statsGrid"><!-- filled by JS --></div>
 
         </div>
     </div>
 
-    <div class="source-line" id="sourceLine">GWI, GWI Core, 2025, internet users born in 1997–2009 (Gen Z)</div>
+    <div class="source-line" id="chartSourceLine"></div>
+    <div class="source-line" id="sourceLine"></div>
 
 </div><!-- end container -->
 
@@ -503,41 +480,33 @@
 const GENERATIONS = ['Gen Z', 'Millennials', 'Gen X', 'Baby Boomers'];
 
 const chartData = {
-    online_activities: {
-        title: 'Online Activities — % Who Engaged at Least Once',
-        subtitle: 'Percentage that engaged in each online activity at least once in the past week',
-        activities: ['Games Consoles','Linear/Broadcast TV','Music Streaming','Online Press','Online TV / Streaming','Physical Press','Podcasts','Radio','Social Media'],
-        generations: {
-            'Gen Z':        [62.9, 62.1, 89.5, 71.0, 87.5, 36.2, 53.9, 51.9, 91.4],
-            'Millennials':  [51.1, 67.9, 79.6, 77.6, 87.0, 38.7, 53.1, 65.8, 90.2],
-            'Gen X':        [26.6, 75.5, 57.9, 76.5, 73.7, 33.7, 37.1, 69.7, 82.5],
-            'Baby Boomers': [12.6, 82.4, 29.7, 70.3, 46.3, 44.9, 17.7, 67.3, 66.9]
-        },
-        suffix: '%'
-    },
     time_spent: {
-        title: 'Time Spent per Session',
-        subtitle: 'Average duration of latest occasion (hrs) by activity',
-        activities: ['Social Media','Podcasts','Radio','Mobile Games','PC / Console Games','Online Press','Physical Press','Music Streaming','Broadcast TV','Short Videos','Streaming Services','Videos (How-tos / Vlogs)'],
+        title: 'Time spent online daily',
+        subtitle: 'Average daily time per person — January 2026',
+        chartSource: 'Source: UKOM Ipsos Iris Online Audience Measurement Service, January 2026, all aged 15+ using PC/laptop, smartphone or tablet',
+        activities: ['Online Gaming (apps)','SVOD','AVOD & BVOD','Online Published Media','Social Media','Online TV','Social Networking'],
         generations: {
-            'Gen Z':        [1.78, 0.68, 0.58, 1.05, 1.17, 0.58, 0.35, 1.78, 0.80, 1.65, 1.87, 1.30],
-            'Millennials':  [1.58, 0.75, 0.93, 0.98, 0.92, 0.70, 0.40, 1.37, 1.12, 1.15, 1.90, 1.07],
-            'Gen X':        [1.12, 0.48, 1.17, 0.65, 0.40, 0.63, 0.28, 0.92, 1.58, 0.62, 1.60, 0.57],
-            'Baby Boomers': [0.72, 0.20, 1.12, 0.37, 0.15, 0.52, 0.40, 0.38, 2.17, 0.27, 0.97, 0.25]
+            'Gen Z':        [10.8,  10.5,  3.5,  1.1,  229.1, 241.3, 260.0],
+            'Millennials':  [22.4,  10.9,  4.3,  2.3,  158.6, 174.0, 195.2],
+            'Gen X':        [29.0,  6.2,   4.5,  4.0,  110.2, 120.0, 145.2],
+            'Baby Boomers': [32.2,  3.8,   5.2,  7.6,  87.2,  93.7,  118.8]
         },
-        suffix: ' hrs'
+        suffix: ' mins',
+        xAxisLabel: 'Average daily minutes per person'
     },
     social_media: {
-        title: 'Social Media Platform Usage',
-        subtitle: 'Percentage using each platform more than once per day',
-        activities: ['Facebook','Facebook Messenger','Instagram','Pinterest','Reddit','Snapchat','TikTok','WhatsApp','X (Twitter)','YouTube'],
+        title: 'Average daily minutes on social media',
+        subtitle: 'Average daily minutes per person by platform — January 2026',
+        chartSource: 'Source: UKOM Ipsos Iris Online Audience Measurement Service, January 2026, all aged 15+ using PC/laptop, smartphone or tablet',
+        activities: ['Pinterest','Reddit','WhatsApp','X (Twitter)','Snapchat','Instagram','Facebook & Messenger','TikTok','YouTube'],
         generations: {
-            'Gen Z':        [23.6, 14.0, 48.5, 6.6, 7.3, 36.2, 45.9, 42.3, 16.7, 27.3],
-            'Millennials':  [44.3, 21.9, 38.9, 3.2, 6.8, 10.9, 25.4, 59.2, 16.3, 19.2],
-            'Gen X':        [45.0, 14.9, 21.8, 2.1, 2.7,  3.2, 11.7, 55.4, 11.4, 11.2],
-            'Baby Boomers': [40.1,  9.9,  8.4, 1.7, 0.4,  0.6,  2.7, 45.1,  5.8,  3.5]
+            'Gen Z':        [8.15,  11.82, 14.87, 20.83, 59.65, 56.95, 24.60,  106.75, 134.63],
+            'Millennials':  [6.90,  17.42, 21.62, 18.12, 27.82, 47.47, 59.58,  75.27,  87.43],
+            'Gen X':        [8.93,  19.75, 17.12, 19.00, 34.57, 29.23, 71.10,  49.08,  60.52],
+            'Baby Boomers': [7.00,  9.10,  15.38, 22.28, 21.52, 23.27, 67.62,  35.72,  56.38]
         },
-        suffix: '%'
+        suffix: ' mins',
+        xAxisLabel: 'Average daily minutes per person'
     }
 };
 
@@ -547,7 +516,7 @@ const chartData = {
 const genProfiles = {
     'Gen Z': {
         name: 'Gen Z',
-        snappy: 'The Always-On Achievers',
+        snappy: 'The always-on achievers',
         descriptors: ['Identity building', 'Platform native', 'Value & authenticity', 'Career establishment', 'Financial independence'],
         now: 'Ambitious, expressive, digitally native. Career-focused, creative and open-minded. Immersed in gaming, sport, tech and social platforms. Expect personalised, socially responsible, digitally fluent brands.',
         future: 'Career-building, financially independent, progressing professionally. Social fluency becomes networking power. Success shifts from aspiration to measurable achievement. Expect value alignment from employers and brands.',
@@ -555,7 +524,7 @@ const genProfiles = {
     },
     'Millennials': {
         name: 'Millennials',
-        snappy: 'The Balancing Builders',
+        snappy: 'The balancing builders',
         descriptors: ['Balancing act', 'Convenience-led', 'Family responsibility', 'Consolidation', 'Stability over growth'],
         now: 'Career-driven but pragmatic. Balancing ambition with family responsibility. Tech-confident, convenience-led, blending digital and traditional media.',
         future: 'Careers mature, responsibilities deepen. Stability outweighs acceleration. Digital becomes utility-first. Success defined by security and sustained balance.',
@@ -563,7 +532,7 @@ const genProfiles = {
     },
     'Gen X': {
         name: 'Gen X',
-        snappy: 'The Security Seekers',
+        snappy: 'The security seekers',
         descriptors: ['Pragmatic utility', 'Research-driven', 'Family-first', 'Future-proofing', 'Trust over trend'],
         now: 'Family and financially focused. Tech-confident but cautious. Balance digital and traditional media. Expect transparency and responsible brand behaviour.',
         future: 'Long-term planning becomes immediate priority. Family protection intensifies. Trusted media and clarity dominate. Transparency becomes non-negotiable.',
@@ -571,7 +540,7 @@ const genProfiles = {
     },
     'Baby Boomers': {
         name: 'Baby Boomers',
-        snappy: 'The Proud Traditionalists',
+        snappy: 'The proud traditionalists',
         descriptors: ['Selective adoption', 'Trust & loyalty', 'Health-conscious', 'Preserving legacy', 'Purposeful digital'],
         now: 'Confident, health-conscious, tradition-led. Value financial security and family time. Prefer trusted media with selective digital engagement.',
         future: 'Wellbeing and legacy move centre stage. Digital remains purposeful. Brand relationships prioritise reliability, clarity and respect.',
@@ -583,26 +552,25 @@ const genProfiles = {
 // ─────────────────────────────────────────────────────────
 // STATE
 // ─────────────────────────────────────────────────────────
-let currentDataset  = 'online_activities';
+let currentDataset  = 'time_spent';
 let currentGenIndex = 0; // 0–3
 
 // ─────────────────────────────────────────────────────────
 // HELPERS
 // ─────────────────────────────────────────────────────────
 function fmtLabel(v, suffix) {
-    if (suffix === ' hrs') {
-        const h = Math.floor(v);
-        const m = Math.round((v - h) * 60);
-        if (h === 0) return m + 'mins';
-        if (m === 0) return h + 'hr';
-        return h + 'hr ' + m + 'mins';
+    if (suffix === ' mins') {
+        if (v < 60) return Math.round(v) + 'm';
+        const h = Math.floor(v / 60);
+        const m = Math.round(v % 60);
+        if (m === 0) return h + 'h';
+        return h + 'h ' + m + 'm';
     }
     return v.toFixed(1) + suffix;
 }
 const xRanges = {
-    online_activities: [0, 100],
-    time_spent:        [0, 3.5],
-    social_media:      [0, 100]
+    time_spent:   [0, 310],
+    social_media: [0, 140]
 };
 
 // ─────────────────────────────────────────────────────────
@@ -638,7 +606,7 @@ function updateChart(animate) {
         },
         xaxis: {
             title: {
-                text: ds.suffix === '%' ? 'Percentage (%)' : 'Hours per Week',
+                text: ds.xAxisLabel || 'Minutes',
                 font: { size: 13, color: 'rgba(255,255,255,0.5)', family: 'Modern Era, sans-serif' }
             },
             range: xRanges[currentDataset],
@@ -701,9 +669,14 @@ function updateProfile(genName) {
     // Stats
     document.getElementById('statsGrid').innerHTML =
         p.stats.map(s => `<div class="stat-pill">${s}</div>`).join('');
-    // Source
-    const srcs = {'Gen Z':'GWI, GWI Core, 2025, internet users born in 1997–2009 (Gen Z)','Millennials':'GWI, GWI Core, 2025, internet users born in 1983–1996 (Millennials)','Gen X':'GWI, GWI Core, 2025, internet users born in 1964–1982 (Gen X)','Baby Boomers':'GWI, GWI Core, 2025, internet users born in 1946–1963 (Baby Boomers)'};
-    document.getElementById('sourceLine').textContent = srcs[genName];
+    // Source below profile card — GWI generation-specific line
+    const gwiSrcs = {
+        'Gen Z':        'GWI, GWI Core, 2025, internet users born in 1997–2009 (Gen Z)',
+        'Millennials':  'GWI, GWI Core, 2025, internet users born in 1983–1996 (Millennials)',
+        'Gen X':        'GWI, GWI Core, 2025, internet users born in 1964–1982 (Gen X)',
+        'Baby Boomers': 'GWI, GWI Core, 2025, internet users born in 1946–1963 (Baby Boomers)'
+    };
+    document.getElementById('sourceLine').textContent = gwiSrcs[genName];
 }
 
 function showProfile(genName) {
@@ -720,12 +693,32 @@ function showProfile(genName) {
 // ─────────────────────────────────────────────────────────
 const genSlider = document.getElementById('genSlider');
 const genLabelEls = document.querySelectorAll('.gen-label');
+const THUMB_RADIUS = 13; // half of 26px thumb
+
+/* Position each label so its centre sits exactly over the thumb stop.
+ * Browser thumb centre for step i (0-based, N total steps) on a
+ * track of rendered width W:
+ *   x = THUMB_RADIUS + i/(N-1) * (W - 2*THUMB_RADIUS)
+ */
+function positionGenLabels() {
+    const track = genSlider;
+    const W = track.offsetWidth;
+    const N = parseInt(track.max) - parseInt(track.min); // = 3
+    genLabelEls.forEach((el, i) => {
+        const x = THUMB_RADIUS + (i / N) * (W - 2 * THUMB_RADIUS);
+        el.style.left = x + 'px';
+    });
+}
 
 function setActiveGenLabel(index) {
     genLabelEls.forEach((el, i) => {
         el.classList.toggle('active', i === index);
     });
 }
+
+window.addEventListener('resize', positionGenLabels);
+// Run after layout so offsetWidth is available
+requestAnimationFrame(positionGenLabels);
 
 genSlider.addEventListener('input', function() {
     const newIndex = parseInt(this.value);
@@ -767,6 +760,8 @@ document.querySelectorAll('.d-tile').forEach(tile => {
             updateChart(false);
             document.getElementById('chartWrapper').classList.remove('transitioning');
         }, 130);
+        // update chart source line when switching datasets
+        document.getElementById('chartSourceLine').textContent = chartData[currentDataset].chartSource || '';
     });
 });
 
@@ -775,6 +770,7 @@ document.querySelectorAll('.d-tile').forEach(tile => {
 // ─────────────────────────────────────────────────────────
 updateChart(false);
 updateProfile(GENERATIONS[0]);
+document.getElementById('chartSourceLine').textContent = chartData[currentDataset].chartSource || '';
 </script>
 </body>
 </html>
