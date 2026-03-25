@@ -177,7 +177,6 @@
         }
         .gen-label {
             position: absolute;
-            transform: translateX(-50%);
             text-align: center;
             white-space: nowrap;
             font-weight: 400;
@@ -705,8 +704,18 @@ function positionGenLabels() {
     const W = track.offsetWidth;
     const N = parseInt(track.max) - parseInt(track.min); // = 3
     genLabelEls.forEach((el, i) => {
+        // Thumb centre position
         const x = THUMB_RADIUS + (i / N) * (W - 2 * THUMB_RADIUS);
+        // Place the left edge at x, then use translateX to centre it
         el.style.left = x + 'px';
+        const labelW = el.offsetWidth;
+        // Ideal offset to centre the label over x
+        let shift = -labelW / 2;
+        // Clamp so label never overflows left or right of the track
+        const minShift = -x;                      // left edge flush
+        const maxShift = (W - x) - labelW;        // right edge flush
+        shift = Math.max(minShift, Math.min(shift, maxShift));
+        el.style.transform = `translateX(${shift}px)`;
     });
 }
 
