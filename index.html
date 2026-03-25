@@ -421,6 +421,9 @@
         </div>
     </div>
 
+    <!-- GWI source: sits between chart block and profile card -->
+    <div class="source-line" id="gwiSourceLine" style="margin-bottom:20px;"></div>
+
     <!-- GENERATION PROFILE CARD -->
     <div class="gen-profile active" id="genProfile">
         <div class="gen-profile-inner">
@@ -468,7 +471,6 @@
     </div>
 
     <div class="source-line" id="chartSourceLine"></div>
-    <div class="source-line" id="sourceLine"></div>
 
 </div><!-- end container -->
 
@@ -668,14 +670,14 @@ function updateProfile(genName) {
     // Stats
     document.getElementById('statsGrid').innerHTML =
         p.stats.map(s => `<div class="stat-pill">${s}</div>`).join('');
-    // Source below profile card — GWI generation-specific line
+    // GWI source between chart block and profile card
     const gwiSrcs = {
-        'Gen Z':        'GWI, GWI Core, 2025, internet users born in 1997–2009 (Gen Z)',
-        'Millennials':  'GWI, GWI Core, 2025, internet users born in 1983–1996 (Millennials)',
-        'Gen X':        'GWI, GWI Core, 2025, internet users born in 1964–1982 (Gen X)',
-        'Baby Boomers': 'GWI, GWI Core, 2025, internet users born in 1946–1963 (Baby Boomers)'
+        'Gen Z':        'Source: GWI, GWI Core, 2025, internet users born in 1997–2009 (Gen Z)',
+        'Millennials':  'Source: GWI, GWI Core, 2025, internet users born in 1983–1996 (Millennials)',
+        'Gen X':        'Source: GWI, GWI Core, 2025, internet users born in 1964–1982 (Gen X)',
+        'Baby Boomers': 'Source: GWI, GWI Core, 2025, internet users born in 1946–1963 (Baby Boomers)'
     };
-    document.getElementById('sourceLine').textContent = gwiSrcs[genName];
+    document.getElementById('gwiSourceLine').textContent = gwiSrcs[genName];
 }
 
 function showProfile(genName) {
@@ -780,6 +782,7 @@ document.querySelectorAll('.d-tile').forEach(tile => {
 updateChart(false);
 updateProfile(GENERATIONS[0]);
 document.getElementById('chartSourceLine').textContent = chartData[currentDataset].chartSource || '';
+document.getElementById('gwiSourceLine').textContent = 'Source: GWI, GWI Core, 2025, internet users born in 1997–2009 (Gen Z)';
 </script>
 </body>
 </html>
