@@ -131,26 +131,12 @@
         }
 
         /* ── GENERATION SLIDER ── */
-        /*
-         * Precision alignment approach:
-         * The browser maps a range input with min=0 max=3 so that
-         * the thumb centre sits at these fractional positions along the track:
-         *   step 0 → 0%,  step 1 → 33.33%,  step 2 → 66.67%,  step 3 → 100%
-         * The thumb has a radius of 13px. So the thumb CENTRE runs from
-         * 13px to (trackWidth - 13px) — NOT from 0 to trackWidth.
-         * We compensate by padding the label row by exactly 13px each side,
-         * then give each label flex:1 and text-align:center.
-         * This means label[0] centre = 0 + 13px + (1/8 × innerWidth)
-         * which exactly matches the thumb at step 0, and so on.
-         */
         .gen-slider-track {
             position: relative;
-            /* room for labels below */
             padding-bottom: 44px;
         }
-        /* inset matches half-thumb (13px) so thumb aligns over label centres */
         .gen-slider-inner {
-            padding: 0 13px;
+            padding: 0; /* no inset — JS positions labels precisely */
         }
         input[type="range"].gen-slider {
             -webkit-appearance: none;
@@ -181,23 +167,19 @@
             border: none;
             cursor: pointer;
         }
-        /*
-         * Label row: position absolute, full width of .gen-slider-track.
-         * Each label gets flex:1 + text-align:center so the centre of
-         * label[i] sits at  13px + (i + 0.5) / 4 × (trackWidth - 26px)
-         * which is exactly where the thumb sits at step i.
-         */
+        /* Labels are positioned absolutely by JS so each one is
+           centred exactly over its thumb stop */
         .gen-labels {
             position: absolute;
             bottom: 0;
             left: 0;
             right: 0;
-            display: flex;
-            align-items: flex-start;
         }
         .gen-label {
-            flex: 1;
+            position: absolute;
+            transform: translateX(-50%);
             text-align: center;
+            white-space: nowrap;
             font-weight: 400;
             font-size: 13px;
             color: rgba(255,255,255,0.55);
@@ -206,8 +188,6 @@
             transition: color 0.2s ease;
             padding-top: 10px;
         }
-        .gen-label:first-child { text-align: left; }
-        .gen-label:last-child  { text-align: right; }
         .gen-label.active {
             font-weight: 700;
             color: #fff;
@@ -590,7 +570,7 @@ function fmtLabel(v, suffix) {
 }
 const xRanges = {
     time_spent:   [0, 310],
-    social_media: [0, 160]
+    social_media: [0, 140]
 };
 
 // ─────────────────────────────────────────────────────────
@@ -713,12 +693,32 @@ function showProfile(genName) {
 // ─────────────────────────────────────────────────────────
 const genSlider = document.getElementById('genSlider');
 const genLabelEls = document.querySelectorAll('.gen-label');
+const THUMB_RADIUS = 13; // half of 26px thumb
+
+/* Position each label so its centre sits exactly over the thumb stop.
+ * Browser thumb centre for step i (0-based, N total steps) on a
+ * track of rendered width W:
+ *   x = THUMB_RADIUS + i/(N-1) * (W - 2*THUMB_RADIUS)
+ */
+function positionGenLabels() {
+    const track = genSlider;
+    const W = track.offsetWidth;
+    const N = parseInt(track.max) - parseInt(track.min); // = 3
+    genLabelEls.forEach((el, i) => {
+        const x = THUMB_RADIUS + (i / N) * (W - 2 * THUMB_RADIUS);
+        el.style.left = x + 'px';
+    });
+}
 
 function setActiveGenLabel(index) {
     genLabelEls.forEach((el, i) => {
         el.classList.toggle('active', i === index);
     });
 }
+
+window.addEventListener('resize', positionGenLabels);
+// Run after layout so offsetWidth is available
+requestAnimationFrame(positionGenLabels);
 
 genSlider.addEventListener('input', function() {
     const newIndex = parseInt(this.value);
