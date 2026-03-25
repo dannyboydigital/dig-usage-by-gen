@@ -355,8 +355,8 @@
         /* first title sits over tiles, second over slider */
         .controls-top-row .controls-panel-title:first-child {
             flex-shrink: 0;
-            /* match total width of 3 tiles + 2 gaps: 3×120 + 2×10 = 380px */
-            width: 380px;
+            /* match total width of 2 tiles + 1 gap: 2×120 + 1×10 = 250px */
+            width: 250px;
         }
         .controls-top-row .controls-panel-title:last-child {
             flex: 1;
@@ -368,7 +368,6 @@
         .d-tile { animation: slideIn 0.4s cubic-bezier(0.4,0,0.2,1) backwards; }
         .d-tile:nth-child(1) { animation-delay: 0s; }
         .d-tile:nth-child(2) { animation-delay: 0.07s; }
-        .d-tile:nth-child(3) { animation-delay: 0.14s; }
 
         /* RESPONSIVE */
         @media (max-width: 1100px) {
@@ -408,22 +407,19 @@
     <!-- CONTROLS PANEL -->
     <div class="controls-panel">
         <div class="controls-top-row">
-            <div class="controls-panel-title">Select Dataset</div>
-            <div class="controls-panel-title">Select Generation</div>
+            <div class="controls-panel-title">Select dataset</div>
+            <div class="controls-panel-title">Select generation</div>
         </div>
         <div class="controls-row">
 
             <!-- Dataset tiles -->
             <div class="dataset-section">
                 <div class="dataset-tiles">
-                    <div class="d-tile active" data-dataset="online_activities">
-                        <h3>Online Activities<br>(Monthly Mins)</h3>
-                    </div>
-                    <div class="d-tile" data-dataset="time_spent">
-                        <h3>Daily Time Online<br>(Mins / Day)</h3>
+                    <div class="d-tile active" data-dataset="time_spent">
+                        <h3>Time spent online<br>(daily mins)</h3>
                     </div>
                     <div class="d-tile" data-dataset="social_media">
-                        <h3>Social Media<br>(Daily Mins)</h3>
+                        <h3>Social media<br>(daily mins)</h3>
                     </div>
                 </div>
             </div>
@@ -454,7 +450,7 @@
             <div class="gen-profile-header">
                 <div class="gen-name-block">
                     <h3 id="profileName">Gen Z</h3>
-                    <div class="snappy" id="profileSnappy">The Always-On Achievers</div>
+                    <div class="snappy" id="profileSnappy">The always-on achievers</div>
                 </div>
             </div>
 
@@ -486,12 +482,13 @@
             </div>
 
             <hr class="section-divider">
-            <div class="stats-section-heading">Key Stats</div>
+            <div class="stats-section-heading">Key stats</div>
             <div class="stats-grid" id="statsGrid"><!-- filled by JS --></div>
 
         </div>
     </div>
 
+    <div class="source-line" id="chartSourceLine"></div>
     <div class="source-line" id="sourceLine"></div>
 
 </div><!-- end container -->
@@ -503,23 +500,10 @@
 const GENERATIONS = ['Gen Z', 'Millennials', 'Gen X', 'Baby Boomers'];
 
 const chartData = {
-    online_activities: {
-        title: 'Average Monthly Minutes per Person — Online Activities',
-        subtitle: 'Average monthly minutes per person, January–December 2025 (based on category audience users)',
-        activities: ['Mobile Gaming','Online Publishers','Social Media'],
-        generations: {
-            'Gen Z':        [315.08, 32.48,  7101.37],
-            'Millennials':  [591.83, 73.51,  4636.18],
-            'Gen X':        [763.74, 125.07, 3171.73],
-            'Baby Boomers': [886.29, 216.54, 2434.93]
-        },
-        suffix: ' mins',
-        source: 'GWI, GWI Core, 2025 (average January–December 2025)',
-        xAxisLabel: 'Average Monthly Minutes per Person'
-    },
     time_spent: {
-        title: 'Average Daily Time Spent Online — by Category',
-        subtitle: 'Average minutes per person per day, January 2026 (based on category audience users)',
+        title: 'Time spent online daily',
+        subtitle: 'Average daily time per person — January 2026',
+        chartSource: 'Source: UKOM Ipsos Iris Online Audience Measurement Service, January 2026, all aged 15+ using PC/laptop, smartphone or tablet',
         activities: ['Online Gaming (apps)','SVOD','AVOD & BVOD','Online Published Media','Social Media','Online TV','Social Networking'],
         generations: {
             'Gen Z':        [10.8,  10.5,  3.5,  1.1,  229.1, 241.3, 260.0],
@@ -528,12 +512,12 @@ const chartData = {
             'Baby Boomers': [32.2,  3.8,   5.2,  7.6,  87.2,  93.7,  118.8]
         },
         suffix: ' mins',
-        source: 'UKOM Ipsos Iris Online Audience Measurement Service, January 2026, all aged 15+ using PC/Laptop, smartphone or tablet',
-        xAxisLabel: 'Average Daily Minutes per Person'
+        xAxisLabel: 'Average daily minutes per person'
     },
     social_media: {
-        title: 'Average Daily Minutes Spent on Social Media — by Platform',
-        subtitle: 'Average daily minutes per person, January 2026 (based on platform audience users)',
+        title: 'Average daily minutes on social media',
+        subtitle: 'Average daily minutes per person by platform — January 2026',
+        chartSource: 'Source: UKOM Ipsos Iris Online Audience Measurement Service, January 2026, all aged 15+ using PC/laptop, smartphone or tablet',
         activities: ['Pinterest','Reddit','WhatsApp','X (Twitter)','Snapchat','Instagram','Facebook & Messenger','TikTok','YouTube'],
         generations: {
             'Gen Z':        [8.15,  11.82, 14.87, 20.83, 59.65, 56.95, 24.60,  106.75, 134.63],
@@ -542,8 +526,7 @@ const chartData = {
             'Baby Boomers': [7.00,  9.10,  15.38, 22.28, 21.52, 23.27, 67.62,  35.72,  56.38]
         },
         suffix: ' mins',
-        source: 'UKOM Ipsos Iris Online Audience Measurement Service, January 2026, all aged 15+ using PC/Laptop, smartphone or tablet',
-        xAxisLabel: 'Average Daily Minutes per Person'
+        xAxisLabel: 'Average daily minutes per person'
     }
 };
 
@@ -553,7 +536,7 @@ const chartData = {
 const genProfiles = {
     'Gen Z': {
         name: 'Gen Z',
-        snappy: 'The Always-On Achievers',
+        snappy: 'The always-on achievers',
         descriptors: ['Identity building', 'Platform native', 'Value & authenticity', 'Career establishment', 'Financial independence'],
         now: 'Ambitious, expressive, digitally native. Career-focused, creative and open-minded. Immersed in gaming, sport, tech and social platforms. Expect personalised, socially responsible, digitally fluent brands.',
         future: 'Career-building, financially independent, progressing professionally. Social fluency becomes networking power. Success shifts from aspiration to measurable achievement. Expect value alignment from employers and brands.',
@@ -561,7 +544,7 @@ const genProfiles = {
     },
     'Millennials': {
         name: 'Millennials',
-        snappy: 'The Balancing Builders',
+        snappy: 'The balancing builders',
         descriptors: ['Balancing act', 'Convenience-led', 'Family responsibility', 'Consolidation', 'Stability over growth'],
         now: 'Career-driven but pragmatic. Balancing ambition with family responsibility. Tech-confident, convenience-led, blending digital and traditional media.',
         future: 'Careers mature, responsibilities deepen. Stability outweighs acceleration. Digital becomes utility-first. Success defined by security and sustained balance.',
@@ -569,7 +552,7 @@ const genProfiles = {
     },
     'Gen X': {
         name: 'Gen X',
-        snappy: 'The Security Seekers',
+        snappy: 'The security seekers',
         descriptors: ['Pragmatic utility', 'Research-driven', 'Family-first', 'Future-proofing', 'Trust over trend'],
         now: 'Family and financially focused. Tech-confident but cautious. Balance digital and traditional media. Expect transparency and responsible brand behaviour.',
         future: 'Long-term planning becomes immediate priority. Family protection intensifies. Trusted media and clarity dominate. Transparency becomes non-negotiable.',
@@ -577,7 +560,7 @@ const genProfiles = {
     },
     'Baby Boomers': {
         name: 'Baby Boomers',
-        snappy: 'The Proud Traditionalists',
+        snappy: 'The proud traditionalists',
         descriptors: ['Selective adoption', 'Trust & loyalty', 'Health-conscious', 'Preserving legacy', 'Purposeful digital'],
         now: 'Confident, health-conscious, tradition-led. Value financial security and family time. Prefer trusted media with selective digital engagement.',
         future: 'Wellbeing and legacy move centre stage. Digital remains purposeful. Brand relationships prioritise reliability, clarity and respect.',
@@ -589,7 +572,7 @@ const genProfiles = {
 // ─────────────────────────────────────────────────────────
 // STATE
 // ─────────────────────────────────────────────────────────
-let currentDataset  = 'online_activities';
+let currentDataset  = 'time_spent';
 let currentGenIndex = 0; // 0–3
 
 // ─────────────────────────────────────────────────────────
@@ -606,9 +589,8 @@ function fmtLabel(v, suffix) {
     return v.toFixed(1) + suffix;
 }
 const xRanges = {
-    online_activities: [0, 8000],
-    time_spent:        [0, 310],
-    social_media:      [0, 160]
+    time_spent:   [0, 310],
+    social_media: [0, 160]
 };
 
 // ─────────────────────────────────────────────────────────
@@ -707,9 +689,14 @@ function updateProfile(genName) {
     // Stats
     document.getElementById('statsGrid').innerHTML =
         p.stats.map(s => `<div class="stat-pill">${s}</div>`).join('');
-    // Source
-    const ds = chartData[currentDataset];
-    document.getElementById('sourceLine').textContent = ds.source || '';
+    // Source below profile card — GWI generation-specific line
+    const gwiSrcs = {
+        'Gen Z':        'GWI, GWI Core, 2025, internet users born in 1997–2009 (Gen Z)',
+        'Millennials':  'GWI, GWI Core, 2025, internet users born in 1983–1996 (Millennials)',
+        'Gen X':        'GWI, GWI Core, 2025, internet users born in 1964–1982 (Gen X)',
+        'Baby Boomers': 'GWI, GWI Core, 2025, internet users born in 1946–1963 (Baby Boomers)'
+    };
+    document.getElementById('sourceLine').textContent = gwiSrcs[genName];
 }
 
 function showProfile(genName) {
@@ -773,8 +760,8 @@ document.querySelectorAll('.d-tile').forEach(tile => {
             updateChart(false);
             document.getElementById('chartWrapper').classList.remove('transitioning');
         }, 130);
-        // update source line for new dataset
-        document.getElementById('sourceLine').textContent = chartData[currentDataset].source || '';
+        // update chart source line when switching datasets
+        document.getElementById('chartSourceLine').textContent = chartData[currentDataset].chartSource || '';
     });
 });
 
@@ -783,7 +770,7 @@ document.querySelectorAll('.d-tile').forEach(tile => {
 // ─────────────────────────────────────────────────────────
 updateChart(false);
 updateProfile(GENERATIONS[0]);
-document.getElementById('sourceLine').textContent = chartData[currentDataset].source || '';
+document.getElementById('chartSourceLine').textContent = chartData[currentDataset].chartSource || '';
 </script>
 </body>
 </html>
