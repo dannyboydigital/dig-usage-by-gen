@@ -422,6 +422,7 @@
     </div>
 
     <!-- GWI source: sits between chart block and profile card -->
+    <div class="source-line" id="chartFootnote" style="display:none; margin-bottom:4px; font-style:italic;">* Brands may be included in multiple categories, meaning audiences and engagement metrics may be duplicated across categories.</div>
     <div class="source-line" id="chartSourceLine" style="margin-bottom:20px;"></div>
 
     <!-- GENERATION PROFILE CARD -->
@@ -772,6 +773,9 @@ document.querySelectorAll('.d-tile').forEach(tile => {
             document.getElementById('chartWrapper').classList.remove('transitioning');
         }, 130);
         // update chart source line when switching datasets
+        // Show footnote only for time_spent dataset
+        document.getElementById('chartFootnote').style.display =
+            currentDataset === 'time_spent' ? 'block' : 'none';
         document.getElementById('chartSourceLine').textContent = chartData[currentDataset].chartSource || '';
     });
 });
@@ -782,6 +786,7 @@ document.querySelectorAll('.d-tile').forEach(tile => {
 updateChart(false);
 updateProfile(GENERATIONS[0]);
 document.getElementById('chartSourceLine').textContent = chartData[currentDataset].chartSource || '';
+document.getElementById('chartFootnote').style.display = currentDataset === 'time_spent' ? 'block' : 'none';
 document.getElementById('gwiSourceLine').textContent = 'Source: GWI, GWI Core, 2025, internet users born in 1997–2009 (Gen Z)';
 </script>
 </body>
