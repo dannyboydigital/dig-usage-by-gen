@@ -363,9 +363,44 @@
             .d-tile { width: 100px; height: 100px; }
             .gen-profile-header { flex-direction: column; }
         }
+        /* ── MOBILE FALLBACK ── */
+        .mobile-message { display: none; }
+        @media (max-width: 768px) {
+            .container { display: none !important; }
+            .mobile-message {
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                min-height: 100vh;
+                padding: 40px 28px;
+                text-align: center;
+                background: #ffffff;
+            }
+            .mobile-message .futurescape-label {
+                font-weight: 400;
+                font-size: 13px;
+                color: #0178f0;
+                letter-spacing: 1.5px;
+                text-transform: uppercase;
+                margin-bottom: 20px;
+            }
+            .mobile-message p {
+                font-weight: 400;
+                font-size: 18px;
+                line-height: 1.7;
+                color: #041561;
+                max-width: 320px;
+            }
+        }
     </style>
 </head>
 <body>
+<div class="mobile-message">
+    <div class="futurescape-label">Futurescape</div>
+    <p>This interactive chart is optimised for desktop. Please view on a desktop browser for the best experience.</p>
+</div>
+
 <div class="container">
 
     <!-- HEADER -->
